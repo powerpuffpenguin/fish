@@ -2,6 +2,14 @@ services:
   code:
     image: $IMAGE
     restart: always
+    command:
+      - sh
+      - "-c"
+      - "sleep 3600"
   xray:
     image: $IMAGE
     restart: always
+    command:
+      - sh
+      - "-c"
+      - "sleep 3600"
