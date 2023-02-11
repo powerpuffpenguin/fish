@@ -1,0 +1,7 @@
+services:
+  code:
+    image: $IMAGE
+    restart: always
+  xray:
+    image: $IMAGE
+    restart: always

@@ -1,0 +1,144 @@
+#!/bin/bash
+#
+# bash completion for docker-compose
+#
+# This script provides completion of:
+#  - commands and their options
+#  - service names
+#  - filepaths
+#
+# To enable the completions either:
+#  - place this file in /etc/bash_completion.d
+#  or
+#  - copy this file to e.g. ~/.docker-compose-completion.sh and add the line
+#    below to your .bashrc after bash completion features are loaded
+#    . ~/.docker-compose-completion.sh
+# set -e
+
+_docker_compose_vals--ansi(){
+    docker_compose_vals=(
+        never
+        always
+        auto
+    )
+}
+_docker_compose_rest(){
+    commands=()
+    flags=()
+    flags_file=()
+    flags_str=()
+    flags_vals=()
+}
+_docker_compose-build(){
+    _docker_compose_rest
+    flags=(
+        --no-cache
+    )
+}
+
+_docker_compose(){
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    local commands=(
+        build config create down events exec 
+        help images kill logs pause port ps 
+        pull push restart rm run scale start stop 
+        top unpause up version
+    )
+    local flags=(
+        --compatibility
+        --help
+    )
+    local flags_file=(
+        --env-file
+        -f --file
+        --profile
+        --project-directory
+    )
+    local flags_str=(
+        -p --project-name
+    )
+    local flags_vals=(
+        --ansi
+    )
+    local input=0
+    local counter=1
+    local docker_compose_cmd="_docker_compose"
+    local docker_compose_flags_vals=""
+    local val
+    local word
+    for ((;counter<COMP_CWORD;counter=counter+1));do
+        if [[ $input != 0 ]];then
+            input=0
+            continue
+        fi
+        word="${COMP_WORDS[counter]}"
+        # input file or dir
+        for val in "${flags_file[@]}"; do
+            if [[ "$val" == "$word" ]];then
+                input=1
+                break
+            fi
+        done
+        # input file or dir
+        for val in "${flags_str[@]}"; do
+            if [[ "$val" == "$word" ]];then
+                input=2
+                break
+            fi
+        done
+        # input vals list
+        for val in "${flags_vals[@]}"; do
+            if [[ "$val" == "$word" ]];then
+                input=3
+                docker_compose_flags_vals="$val"
+                break
+            fi
+        done
+
+        # sub command
+        for val in "${commands[@]}"; do
+            if [[ "$val" == "$word" ]];then
+                docker_compose_cmd="$docker_compose_cmd-$val"
+                eval "$docker_compose_cmd"
+                if [[ $? == 0 ]];then
+                    break
+                else
+                    return 0
+                fi
+            fi
+        done
+    done
+
+    case $input in
+        0)
+            case "$cur" in
+                -*)
+                    opts="${flags[@]} ${flags_file[@]} ${flags_str[@]} ${flags_vals[@]}"
+                    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+                ;;
+                *)
+                    opts="${commands[@]}"
+                    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+                ;;
+            esac
+        ;;
+        # input file
+        1)
+            _filedir || COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
+        ;;
+        # input str
+        # 2)
+        # ;;
+        # input vals list
+        3)
+            local docker_compose_vals=()
+            eval "${docker_compose_cmd}_vals${docker_compose_flags_vals}"
+            opts="${docker_compose_vals[@]}"
+            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        ;;
+    esac
+}
+
+complete -F _docker_compose docker-compose docker-compose.exe
