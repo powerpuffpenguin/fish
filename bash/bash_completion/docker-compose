@@ -1,0 +1,781 @@
+#!/bin/bash
+#
+# bash completion for docker-compose
+#
+# This script provides completion of:
+#  - commands and their options
+#  - service names
+#  - filepaths
+#
+# To enable the completions either:
+#  - place this file in /etc/bash_completion.d
+#  or
+#  - copy this file to e.g. ~/.docker-compose-completion.sh and add the line
+#    below to your .bashrc after bash completion features are loaded
+#    . ~/.docker-compose-completion.sh
+
+
+### BEGIN helper functions ###
+_docker_compose_args_func(){
+    eval "_docker_compose_args(){
+    $1
+}"
+}
+_docker_compose_args_filedir(){
+    eval "_docker_compose_args(){
+    COMPREPLY=( \$(compgen -o plusdirs -f \${cur}) )
+}"
+}
+_docker_compose_args_opts(){
+    eval "_docker_compose_args(){
+    COMPREPLY=( \$(compgen -W '$1' -- \${cur}) )
+}"
+}
+_docker_compose_args(){
+    local _x=0
+}
+_docker_compose_rest(){
+    eval '_docker_compose_args(){
+    local _x=0
+}'
+    commands=()
+    flags=()
+    flags_file=()
+    flags_str=()
+    flags_vals=()
+    flags_eval=()
+}
+
+_docker_compose_flags(){
+    local opts="${flags[@]} ${flags_file[@]} ${flags_str[@]} ${flags_vals[@]} ${flags_eval[@]} ${flags_eval[@]}"
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+### END helper functions ###
+
+
+### BEGIN define ###
+_docker_compose_vals--ansi(){
+    docker_compose_vals=(
+        never
+        always
+        auto
+    )
+}
+_docker_compose_services(){
+    if [[ -f compose.yaml || -f compose.yml || -f docker-compose.ayml || -f docker-compose.yml ]];then
+        local opts=$(docker-compose convert --services)
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+_docker_compose_run_services(){
+    if [[ -f compose.yaml || -f compose.yml || -f docker-compose.ayml || -f docker-compose.yml ]];then
+        local opts=$(docker-compose ps --services --status running)
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+_docker_compose_ps_services(){
+    if [[ -f compose.yaml || -f compose.yml || -f docker-compose.ayml || -f docker-compose.yml ]];then
+        local opts=$(docker-compose ps --services -a)
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+_docker_compose_pid_services(){
+    if [[ -f compose.yaml || -f compose.yml || -f docker-compose.ayml || -f docker-compose.yml ]];then
+        local opts=$(docker-compose ps --services --status running --status paused)
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+_docker_compose_paused_services(){
+    if [[ -f compose.yaml || -f compose.yml || -f docker-compose.ayml || -f docker-compose.yml ]];then
+        local opts=$(docker-compose ps --services --status paused)
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+#-- BEGIN build --#
+_docker_compose-build_vals--progress(){
+    docker_compose_vals=(
+        auto tty plain quiet
+    )
+}
+_docker_compose-build_vals--ssh(){
+    docker_compose_vals=(
+        default
+    )
+}
+_docker_compose-build(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --no-cache
+        --pull
+        -q --quiet
+    )
+    flags_str=(
+        --build-arg
+    )
+    flags_vals=(
+        --progress
+        --ssh
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END build --#
+#-- BEGIN convert --#
+_docker_compose-convert_vals--format(){
+    docker_compose_vals=(
+        yaml json
+    )
+}
+_docker_compose-convert(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --hash
+        --images
+        --no-consistency
+        --no-interpolate
+        --no-normalize
+        --profiles
+        -q --quiet
+        --resolve-image-digests
+        --services
+        --volumes
+    )
+    flags_file=(
+        -o --output
+    )
+    flags_vals=(
+        --format
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END convert --#
+#-- BEGIN cp --#
+_docker_compose-cp(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -a --archive
+        -L --follow-link
+    )
+    flags_str=(
+        --index
+    )
+}
+#-- END cp --#
+#-- BEGIN create --#
+_docker_compose-create_vals--pull(){
+ docker_compose_vals=(
+    always missing never
+ )   
+}
+_docker_compose-create(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+        
+        --build
+        --force-recreate
+        --no-build       
+        --no-recreate
+    )
+    flags_vals=(
+        --pull
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END create --#
+#-- BEGIN down --#
+_docker_compose-down_vals--rmi(){
+    docker_compose_vals=(
+        "local" "all"
+    )
+}
+_docker_compose-down(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+        
+        --remove-orphans
+    )
+    flags_str=(
+        -t  --timeout
+        -v --volumes
+    )
+    flags_vals=(
+        --rmi
+    )
+    _docker_compose_args_func "_docker_compose_flags"
+}
+#-- END down --#
+#-- BEGIN events --#
+_docker_compose-events(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --json
+    )
+
+    # args
+    _docker_compose_args_func "_docker_compose_run_services"
+}
+#-- END events --#
+#-- BEGIN exec --#
+_docker_compose-exec_vals--user(){
+    docker_compose_vals=(
+        root bin daemon adm lp sync shutdown halt
+        mail news uucp operator man postmaster
+        cron ftp sshd at squid xfs games cyrus
+        vpopmail ntp smmsp guest nobody
+    )
+}
+_docker_compose-exec_vals-u(){
+    _docker_compose-exec_vals--user
+}
+_docker_compose-exec(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -d --detach 
+        -T --no-TTY
+        --privileged
+    )
+    flags_str=(
+        -e --env
+        --index
+        -w --workdir
+    )
+    flags_vals=(
+        -u --user
+    )
+
+    # args
+    _docker_compose_args_func "_docker_compose_run_services"
+}
+#-- END exec --# images
+#-- BEGIN images --#
+_docker_compose-images_vals--format(){
+    docker_compose_vals=(
+        table json
+    )
+}
+_docker_compose-images(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -q --quiet
+    )
+    flags_vals=(
+        --format
+    )
+
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END images --#
+#-- BEGIN kill --#
+_docker_compose-kill_vals--signal(){
+    docker_compose_vals=(
+        SIGKILL SIGTERM
+        SIGINT SIGQUIT
+    )
+}
+_docker_compose-kill_vals-s(){
+    _docker_compose-kill_vals--signal
+}
+_docker_compose-kill(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --remove-orphans
+    )
+    flags_vals=(
+        -s --signal
+    )
+
+    # args
+    _docker_compose_args_func "_docker_compose_run_services"
+}
+#-- END kill --#
+#-- BEGIN logs --#
+_docker_compose-logs(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -f --follow
+        --no-color
+        --no-log-prefix
+        -t --timestamps
+    )
+    flags_str=(
+        --since
+        --tail
+        --until
+    )
+
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END logs --#
+#-- BEGIN ls --#
+_docker_compose-ls_vals--format(){
+    docker_compose_vals=(
+        table json
+    )
+}
+_docker_compose-ls(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -a --all
+        -q --quiet
+    )
+    flags_str=(
+        --filter
+    )
+    flags_vals=(
+        --format
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_flags"
+}
+#-- END ls --#
+#-- BEGIN pause --#
+_docker_compose-pause(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_run_services"
+}
+#-- END port --#
+#-- BEGIN port --#
+_docker_compose-port_vals--protocol(){
+    docker_compose_vals=(
+        tcp udp
+    )
+}
+_docker_compose-port(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    flags_str=(
+        --index
+    )
+    flags_vals=(
+        --protocol
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END ps --#
+#-- BEGIN ps --#
+_docker_compose-ps_vals--format(){
+    docker_compose_vals=(
+        table json
+    )
+}
+_docker_compose-ps_vals--status(){
+    docker_compose_vals=(
+        paused restarting removing running dead created exited
+    )
+}
+_docker_compose-ps(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        -a --all
+        -q --quiet
+        --services
+    )
+    flags_str=(
+        --filter
+    )
+    flags_vals=(
+        --format
+        --status
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END ps --#
+#-- BEGIN pull --#
+_docker_compose-pull(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --ignore-buildable
+        --ignore-pull-failures
+        --include-deps
+        -q --quiet
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END pull --#
+#-- BEGIN push --#
+_docker_compose-push(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --ignore-push-failures
+        --include-deps
+        -q --quiet
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END push --#
+#-- BEGIN restart --#
+_docker_compose-restart(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    flags_str=(
+        -t --timeout
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END restart --#
+#-- BEGIN rm --#
+_docker_compose-rm(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+        -f --force
+        -s --stop
+        -v --volumes
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END rm --#
+#-- BEGIN run --#
+_docker_compose-run_vals--user(){
+    docker_compose_vals=(
+        root bin daemon adm lp sync shutdown halt
+        mail news uucp operator man postmaster
+        cron ftp sshd at squid xfs games cyrus
+        vpopmail ntp smmsp guest nobody
+    )
+}
+_docker_compose-run_vals-u(){
+    _docker_compose-run_vals--user
+}
+_docker_compose-run(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+        
+        --build
+        -d --detach
+        -i --interactive
+        -T --no-TTY
+        --no-deps
+    )
+    flags_str=(
+        --entrypoint
+        -e --env
+        -l --label
+        --name
+        -p --publish
+        --quiet-pull
+        --rm
+        --service-ports
+        --use-aliases
+        -v --volume
+        -w --workdir
+    )
+    flags_vals=(
+        -u --user
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END run --#
+#-- RUN start --#
+_docker_compose-start(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END start --#
+#-- RUN stop --#
+_docker_compose-stop(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    flags_str=(
+        -t --timeout
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_ps_services"
+}
+#-- END stop --#
+#-- RUN top --#
+_docker_compose-top(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_pid_services"
+}
+#-- END top --#
+#-- RUN unpause --#
+_docker_compose-unpause(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_paused_services"
+}
+#-- END unpause --#
+#-- RUN up --#
+_docker_compose-up_vals--pull(){
+    docker_compose_vals=(
+        always missing never
+    )
+}
+_docker_compose-up(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --abort-on-container-exit
+        --always-recreate-deps
+        --attach-dependencies
+        --build
+        -d --detach
+        --force-recreate
+
+        --no-build
+        --no-color
+        --no-deps
+        --no-log-prefix
+        --no-recreate
+        --no-start
+
+        -quiet-pull
+        --remove-orphans
+        -V --renew-anon-volumes
+
+        --timestamps
+        --wait
+    )
+    flags_str=(
+        --attach
+        --exit-code-from
+        --no-attach
+
+        -scale
+        -t --timeout
+    )
+    flags_vals=(
+        --pull
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_services"
+}
+#-- END up --#
+#-- BEGIN version --#
+_docker_compose-version_vals--format(){
+    docker_compose_vals=(
+        pretty json
+    )
+}
+_docker_compose-version_vals-f(){
+    _docker_compose-version_vals--format
+}
+_docker_compose-version(){
+    _docker_compose_rest
+    # flags
+    flags=(
+        --help
+
+        --short
+    )
+    flags_vals=(
+        -f --format
+    )
+    # args
+    _docker_compose_args_func "_docker_compose_flags"
+}
+#-- END version --#
+### END define ###
+
+_docker_compose_foreach(){
+    local word="${COMP_WORDS[counter]}"
+    local val
+    # input file or dir
+    for val in "${flags_file[@]}"; do
+        if [[ "$val" == "$word" ]];then
+            input=1
+            return
+        fi
+    done
+    # input file or dir
+    for val in "${flags_str[@]}"; do
+        if [[ "$val" == "$word" ]];then
+            input=2
+            return
+        fi
+    done
+    # input vals list
+    for val in "${flags_vals[@]}"; do
+        if [[ "$val" == "$word" ]];then
+            input=3
+            docker_compose_flags_vals="$val"
+            return
+        fi
+    done
+    # input eval
+    for val in "${flags_eval[@]}"; do
+        if [[ "$val" == "$word" ]];then
+            input=4
+            docker_compose_flags_eval="$val"
+            return
+        fi
+    done
+    # sub command
+    for val in "${commands[@]}"; do
+        if [[ "$val" == "$word" ]];then
+            docker_compose_cmd="$docker_compose_cmd-$val"
+            eval "$docker_compose_cmd"
+            if [[ $? == 0 ]];then
+                return
+            else
+                # eval error
+                exit 0
+            fi
+        fi
+    done
+}
+_docker_compose(){
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    local commands=(
+        build convert cp create down events exec 
+        images kill logs ls pause port ps 
+        pull push restart rm run start stop 
+        top unpause up version
+    )
+    local flags=(
+        --compatibility
+        --help
+    )
+    local flags_file=(
+        --env-file
+        -f --file
+        --profile
+        --project-directory
+    )
+    local flags_str=(
+        -p --project-name
+    )
+    local flags_vals=(
+        --ansi
+    )
+    local flags_eval=()
+    local input=0
+    local counter=1
+    local docker_compose_cmd="_docker_compose"
+    local docker_compose_flags_vals=""
+    local docker_compose_flags_eval=""
+    for ((;counter<COMP_CWORD;counter=counter+1));do
+        if [[ $input == 0 ]];then
+            _docker_compose_foreach
+        else
+            input=0
+        fi        
+    done
+
+    case $input in
+        0)
+            case "$cur" in
+                -*)
+                    _docker_compose_flags
+                ;;
+                *)
+                    if [[ ${#commands[@]} == 0 ]];then
+                        # args
+                        _docker_compose_args
+                    else
+                        # sub command
+                        local opts="${commands[@]}"
+                        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+                    fi
+                ;;
+            esac
+        ;;
+        # input file
+        1)
+            COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
+        ;;
+        # input str
+        # 2)
+        # ;;
+        # input vals list
+        3)
+            local docker_compose_vals=()
+            eval "${docker_compose_cmd}_vals${docker_compose_flags_vals}"
+            local opts="${docker_compose_vals[@]}"
+            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        ;;
+        # input eval
+        4)
+            eval "${docker_compose_cmd}_eval${docker_compose_flags_eval}"
+        ;;
+    esac
+}
+
+complete -F _docker_compose docker-compose docker-compose.exe

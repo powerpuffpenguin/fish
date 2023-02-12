@@ -6,6 +6,6 @@
 
 # bash
 
-- [docker-compose](bash/docker-compose/README.md)
+- [bash_completion](bash/bash_completion/README.md)
 
 # deno
